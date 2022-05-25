@@ -1,0 +1,1312 @@
+package compi1.final_201220165;
+
+import java_cup.runtime.*;
+import java.util.*;
+
+parser code{:
+Arbol arbol;
+ArrayList errores;
+
+/* *Metodo que se llama automaticamente ante algun error sintactico */
+public void syntax_error(Symbol s){
+    System.out.println("Error en la columna: " + (s.left + 1) + ", linea: " + (s.right + 1) + ". Identificador " + s.value);
+}
+
+/* *Metodo que se llama en el momento que ya no es posible una recuperacion de errores */
+public void unrecovered_syntax_error(Symbol s){
+    System.out.println("Error en la linea: " + (s.right + 1) + ", columna: " + (s.left + 1) + ". Identificador " + s.value);
+    
+}
+
+public Arbol getArbol(){
+        return arbol;
+    }
+
+public void SetArbol(Arbol parbol){
+    this.arbol = parbol;
+}
+
+:}
+
+action code 
+{:
+    
+:}
+
+terminal String tpuntoycoma, tllaveabrir, tpor, tpunto, tparentesiscerrar, tigual, timport, tclase, tint, tbool, tstring, tchar, tdouble, tif, telse, tfor, twhile, tdo, tswitch, tdp;
+terminal String tprivate, tpublic, tprotected, tfinal, tbreak, treturn, tnew, tcase, tdefault, tmas, tmenos, tdiv, tand, tor, tnot, tcoma, tthis, tmenor, tmayor, tmenorigual, tmayorigual, tiguala, tdiferente, tfalse;
+terminal String ttrue, tnumero, tid, tcadena, tcaracter, tabstract, tfinally, tcontinue, tinterface, tthrow, tnative, ttry, tcatch, timplements, tpackage, tsuper, textends;
+terminal String tthrows, toverride, tnull, tmain, tstatic, targ;
+terminal String tparentesisabrir, tllavecerrar;
+
+non terminal NodoArbol INICIO, LCLASE, CLASE, LIMPORT, IMPORT, IMPORTAR, CONTENIDO, VISIBILIDAD, LSENTENCIAS, SENTENCIAS, DECLARACION, LID, ASIGNACION, LMETODO, METODO, FUNCION, CONSTRUCTOR, LPARAMETROS;
+non terminal NodoArbol PARAMETRO, TIPO, LSENTENCIASMETFUN, SENTENCIASMETFUN, IFMETFUN, ELSEMETFUN, FORMETFUN, WHILEMETFUN, DOWHILEMETFUN, SWITCHMETFUN, CASOSMETFUN, LLAMADA, FOR, AUMENTO, LPARAMETROSLLAMADA, METODOS;
+non terminal NodoArbol FUNCIONES, ID, AUXLLAMADA, LIDA, IMPRIMIR, EXP, TIPOMETODOS;
+
+precedence left tmas, tmenos;
+precedence left tpor, tdiv;
+precedence left tmenor, tmenorigual, tmayor, tmayorigual, tigual, tdiferente, tiguala;
+precedence left tand, tor;
+precedence right tnot;
+precedence left tparentesisabrir;
+
+start with INICIO;
+
+INICIO ::= LCLASE:lclase{:
+    Term Inicio = new Term("INICIO");
+    NodoArbol raiz = new NodoArbol(null, Inicio);
+    raiz.AgregarHijos(lclase);
+    arbol = new Arbol(raiz);
+:};
+
+LCLASE ::= CLASE:clase LCLASE:lclase{:
+    Term aux = new Term("LCLASE");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    raiz.AgregarHijos(clase);
+    raiz.AgregarHijos(lclase);
+    RESULT = raiz;
+:}
+        | CLASE:clase{:
+    Term aux = new Term("LCLASE");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    raiz.AgregarHijos(clase);
+    RESULT = raiz;
+:};
+
+CLASE ::= LIMPORT:limport CONTENIDO:contenido{:
+    Term aux = new Term("CLASE");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    raiz.AgregarHijos(limport);
+    raiz.AgregarHijos(contenido);
+    RESULT = raiz;
+:}
+        | CONTENIDO:contenido{:
+    Term aux = new Term("CLASE");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    raiz.AgregarHijos(contenido);
+    RESULT = raiz;
+:};
+
+LIMPORT ::= IMPORT:importar LIMPORT:limport{:
+    Term aux = new Term("LIMPORT");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    raiz.AgregarHijos(importar);
+    raiz.AgregarHijos(limport);
+    RESULT = raiz;
+:}
+        | IMPORT:importar{:
+        Term aux = new Term("LIMPORT");
+        NodoArbol raiz = new NodoArbol(null, aux);
+        raiz.AgregarHijos(importar);
+        RESULT = raiz;
+:};
+
+IMPORT ::= timport:auximpo IMPORTAR:importar{:
+    Term Import = new Term("IMPORT");
+    NodoArbol raiz = new NodoArbol(null, Import);
+    Token aux = new Token(auximpo, (auximporight+1), (auximpoleft+1));
+    Term aux1 = new Term("import");
+    NodoArbol aux2 = new NodoArbol(aux, aux1);
+    raiz.AgregarHijos(aux2);
+    raiz.AgregarHijos(importar);
+    RESULT = raiz;
+:};
+
+IMPORTAR ::= tid:id tpunto:p IMPORTAR:importar{:
+    Term aux = new Term("IMPORTAR");
+    NodoArbol raiz = new NodoArbol(null, aux);
+    aux = new Term("id");
+    Token aux1 = new Token(id, (idright+1), (idleft+1));
+    raiz.AgregarHijos(new NodoArbol(aux1, aux));
+    raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("punto")));
+    raiz.AgregarHijos(importar);
+    RESULT = raiz;
+:}
+            | tpor:p tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("IMPORTAR"));
+            raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("multiplicacion")));
+            raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+            RESULT = raiz;
+:}
+            | tid:id tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("IMPORTAR"));
+            raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+            raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+            RESULT = raiz;
+:}
+            | error tpuntoycoma{:
+            RESULT = new NodoArbol(null, new Term("IMPORTAR"));
+:};
+
+CONTENIDO ::= VISIBILIDAD:vis tclase:clase tid:id tllaveabrir:llavea LSENTENCIAS:sentencias tllavecerrar:llavec{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CONTENIDO"));
+    raiz.AgregarHijos(vis);
+    raiz.AgregarHijos(new NodoArbol(new Token(clase, (claseright+1), (claseleft+1)), new Term(clase)));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(llavea, (llavearight+1), (llavealeft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(llavec, (llavecright+1), (llavecleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:vis tclase:clase tid:id tllaveabrir:llavea tllavecerrar:llavec{:
+            NodoArbol raiz = new NodoArbol(null, new Term("CONTENIDO"));
+            raiz.AgregarHijos(vis);
+            raiz.AgregarHijos(new NodoArbol(new Token(clase, (claseright+1), (claseleft+1)), new Term(clase)));
+            raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+            raiz.AgregarHijos(new NodoArbol(new Token(llavea, (llavearight+1), (llavealeft+1)), new Term("llave abrir")));
+            raiz.AgregarHijos(new NodoArbol(new Token(llavec, (llavecright+1), (llavecleft+1)), new Term("llave cerrar")));
+            RESULT = raiz;
+:}
+            | error tllaveabrir LSENTENCIAS tllavecerrar{:
+            NodoArbol raiz = new NodoArbol(null, new Term("CONTENIDO"));
+            RESULT = raiz;
+:}
+            | error tllaveabrir tllavecerrar{:
+            NodoArbol raiz = new NodoArbol(null, new Term("CONTENIDO"));
+            RESULT = raiz;
+:};
+
+VISIBILIDAD ::= tpublic:publico{:
+    NodoArbol raiz = new NodoArbol(null, new Term("VISIBILIDAD"));
+    raiz.AgregarHijos(new NodoArbol(new Token(publico, (publicoright+1), (publicoleft+1)), new Term(publico)));
+    RESULT = raiz;
+:}
+            | tprivate:privado{:
+            NodoArbol raiz = new NodoArbol(null, new Term("VISIBILIDAD"));
+            raiz.AgregarHijos(new NodoArbol(new Token(privado, (privadoright+1), (privadoleft+1)), new Term(privado)));
+            RESULT = raiz;
+:}
+            | tprotected:protegido{:
+            NodoArbol raiz = new NodoArbol(null, new Term("VISIBILIDAD"));
+            raiz.AgregarHijos(new NodoArbol(new Token(protegido, (protegidoright+1), (protegidoleft+1)), new Term(protegido)));
+            RESULT = raiz;
+:}
+            | tfinal:vfinal{:
+            NodoArbol raiz = new NodoArbol(null, new Term("VISIBILIDAD"));
+            raiz.AgregarHijos(new NodoArbol(new Token(vfinal, (vfinalright+1), (vfinalleft+1)), new Term(vfinal)));
+            RESULT = raiz;
+:};
+
+LSENTENCIAS ::= SENTENCIAS:sentencias LSENTENCIAS:lsentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LSENTENCIAS"));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(lsentencias);
+    RESULT = raiz;
+:}
+            | SENTENCIAS:sentencias{:
+            NodoArbol raiz = new NodoArbol(null, new Term("LSENTENCIAS"));
+            raiz.AgregarHijos(sentencias);
+            RESULT = raiz;
+:};
+
+SENTENCIAS ::= ASIGNACION:asignacion{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+    raiz.AgregarHijos(asignacion);
+    RESULT = raiz;
+:}
+            | DECLARACION:declaracion{:
+            NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+            raiz.AgregarHijos(declaracion);
+            RESULT = raiz;
+:}
+            | CONSTRUCTOR:constructor{:
+            NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+            raiz.AgregarHijos(constructor);
+            RESULT = raiz;
+:}
+            | METODOS:metodos{:
+            NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+            raiz.AgregarHijos(metodos);
+            RESULT = raiz;
+:}
+            | error tpuntoycoma{:
+            NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+            RESULT = raiz;
+:}
+            | error tllaveabrir tllavecerrar{:
+            NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIAS"));
+            RESULT = raiz;
+:};
+
+DECLARACION ::= VISIBILIDAD:vis TIPO:tipo LID:lid tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("DECLARACION"));
+    raiz.AgregarHijos(vis);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(lid);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo LID:lid tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("DECLARACION"));
+            raiz.AgregarHijos(tipo);
+            raiz.AgregarHijos(lid);
+            raiz.AgregarHijos(new NodoArbol(new Token(pyc,(pycright+1), (pycleft+1)), new Term("punto y coma")));
+            RESULT = raiz;
+:};
+
+ASIGNACION ::= VISIBILIDAD:vis TIPO:tipo LIDA:lid tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("ASIGNACION"));
+    raiz.AgregarHijos(vis);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(lid);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo LIDA:lid tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("ASIGNACION"));
+            raiz.AgregarHijos(tipo);
+            raiz.AgregarHijos(lid);
+            raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+            RESULT = raiz;
+:}
+            | LIDA:lid tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("ASIGNACION"));
+            raiz.AgregarHijos(lid);
+            raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+            RESULT = raiz;
+:};
+
+TIPO ::= tint:entero{:
+    NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(entero, (enteroright+1), (enteroleft+1)), new Term(entero)));
+    RESULT = raiz;
+:}
+        | tstring:cadena{:
+        NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(cadena, (cadenaright+1),(cadenaleft+1)), new Term(cadena)));
+        RESULT = raiz;
+:}
+        | tbool:bool{:
+        NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(bool, (boolright+1), (boolleft+1)), new Term(bool)));
+        RESULT = raiz;
+:}
+        | tchar:caracter{:
+        NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(caracter, (caracterright+1), (caracterleft+1)), new Term(caracter)));
+        RESULT = raiz;
+:}
+        | tdouble:decimal{:
+        NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(decimal, (decimalright+1), (decimalleft+1)), new Term(decimal)));
+        RESULT = raiz;
+:}
+        | tid:id{:
+        NodoArbol raiz = new NodoArbol(null, new Term("TIPO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+        RESULT = raiz;
+:};
+
+LID ::= tid:id tcoma:coma LID:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LID"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LID"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;
+:};
+
+LIDA ::= tid:id tigual:igual EXP:exp tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tmas:mas tigual:igual EXP:exp tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tmenos:menos tigual:igual EXP:exp tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tmas:mas tmas:mas1 tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tmenos:menos tmenos:menos1 tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tmas:mas tmas:mas1 tid:id tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tmenos:menos tmenos:menos1 tid:id tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnew:nuevo TIPO:tipo tparentesisabrir:pa LPARAMETROSLLAMADA:par tparentesiscerrar:pc tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nuevo, (nuevoright+1), (nuevoleft+1)), new Term(nuevo)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(par);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnew:nuevo TIPO:tipo tparentesisabrir:pa tparentesiscerrar:pc tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nuevo, (nuevoright+1), (nuevoleft+1)), new Term(nuevo)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnull:nul tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nul, (nulright+1), (nulleft+1)), new Term(nul)));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tid:id2 tigual:igual2 LIDA:id3{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id2, (id2right+1), (id2left+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual2, (igual2right+1), (igual2left+1)), new Term("igual")));
+    raiz.AgregarHijos(id3);
+    RESULT = raiz;
+:}
+    | tid:id tcoma:coma LIDA:id2{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(id2);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:}
+    | tid:id tmas:mas tigual:igual EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:}
+    | tid:id tmenos:menos tigual:igual EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:}
+    | tid:id tmas:mas tmas:mas1{:
+NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    RESULT = raiz;
+:}
+    | tid:id tmenos:menos tmenos:menos1
+{:
+NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+    RESULT = raiz;:}
+    | tmas:mas tmas:mas1 tid:id{:NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;:}
+    | tmenos:menos tmenos:menos1 tid:id{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnew:nuevo TIPO:tipo tparentesisabrir:pa LPARAMETROSLLAMADA:par tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nuevo, (nuevoright+1), (nuevoleft+1)), new Term(nuevo)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(par);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnew:nuevo TIPO:tipo tparentesisabrir:pa tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nuevo, (nuevoright+1), (nuevoleft+1)), new Term(nuevo)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual tnull:nul{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LIDA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(new NodoArbol(new Token(nul, (nulright+1), (nulleft+1)), new Term(nul)));
+    RESULT = raiz;
+:};
+
+CONSTRUCTOR ::= VISIBILIDAD:inicio tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:};
+
+METODOS ::= tpublic:inicio tstatic:es TIPO:tipo tmain:id tparentesisabrir:pa tstring:st tid:idpara targ:ar tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(inicio, (inicioright+1), (inicioleft+1)), new Term(inicio)));
+    raiz.AgregarHijos(new NodoArbol(new Token(es, (esright+1), (esleft+1)), new Term(es)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(st, (stright+1), (stleft+1)), new Term(st)));
+    raiz.AgregarHijos(new NodoArbol(new Token(idpara, (idpararight+1), (idparaleft+1)), new Term("id")));
+    //raiz.AgregarHijos(new NodoArbol(new Token(ar, (arright+1), (arleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tpublic:inicio tstatic:es TIPO:tipo tmain:id tparentesisabrir:pa tstring:st tid:idpara targ:ar tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(inicio, (inicioright+1), (inicioleft+1)), new Term(inicio)));
+    raiz.AgregarHijos(new NodoArbol(new Token(es, (esright+1), (esleft+1)), new Term(es)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(st, (stright+1), (stleft+1)), new Term(st)));
+    raiz.AgregarHijos(new NodoArbol(new Token(idpara, (idpararight+1), (idparaleft+1)), new Term("id")));
+    //raiz.AgregarHijos(new NodoArbol(new Token(ar, (arright+1), (arleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tpublic:inicio tstatic:es TIPO:tipo tmain:id tparentesisabrir:pa tstring:st targ:ar tid:idpara tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(inicio, (inicioright+1), (inicioleft+1)), new Term(inicio)));
+    raiz.AgregarHijos(new NodoArbol(new Token(es, (esright+1), (esleft+1)), new Term(es)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(st, (stright+1), (stleft+1)), new Term(st)));
+    raiz.AgregarHijos(new NodoArbol(new Token(idpara, (idpararight+1), (idparaleft+1)), new Term("id")));
+    //raiz.AgregarHijos(new NodoArbol(new Token(ar, (arright+1), (arleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | tpublic:inicio tstatic:es TIPO:tipo tmain:id tparentesisabrir:pa tstring:st targ tid:idpara tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(inicio, (inicioright+1), (inicioleft+1)), new Term(inicio)));
+    raiz.AgregarHijos(new NodoArbol(new Token(es, (esright+1), (esleft+1)), new Term(es)));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(st, (stright+1), (stleft+1)), new Term(st)));
+    raiz.AgregarHijos(new NodoArbol(new Token(idpara, (idpararight+1), (idparaleft+1)), new Term("id")));
+    //raiz.AgregarHijos(new NodoArbol(new Token(ar, (arright+1), (arleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio TIPO:tipo tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio TIPO:tipo tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio TIPO:tipo tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | VISIBILIDAD:inicio TIPO:tipo tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(inicio);
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+      raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo tid:id tparentesisabrir:pa LPARAMETROS:parametros tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(parametros);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | TIPO:tipo tid:id tparentesisabrir:pa tparentesiscerrar:pc tllaveabrir:la tllavecerrar:fin{:
+    NodoArbol raiz = new NodoArbol(null, new Term("METODO"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1),(pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(fin, (finright+1), (finleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:};
+
+EXP ::= EXP:exp tpor:por EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(por, (porright+1), (porleft+1)), new Term("por")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tmas:mas EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tmenos:menos EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tdiv:div EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(div, (divright+1), (divleft+1)), new Term("division")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tand:and EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(and, (andright+1), (andleft+1)), new Term("and")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tor:or EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(or, (orright+1), (orleft+1)), new Term("or")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | tnot:not EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(not, (notright+1), (notleft+1)), new Term("not")));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:}
+    | tmenos:menos EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:}
+    | EXP:exp tmenor:menor EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(menor, (menorright+1), (menorleft+1)), new Term("menor")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tmayor:mayor EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(mayor, (mayorright+1), (mayorleft+1)), new Term("mayor")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tmenorigual:menor EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(menor, (menorright+1), (menorleft+1)), new Term("menorigual")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tmayorigual:mayor EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(mayor, (mayorright+1), (mayorleft+1)), new Term("mayorigual")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tiguala:igual EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igualar")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | EXP:exp tdiferente:diferente EXP:exp1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(diferente, (diferenteright+1), (diferenteleft+1)), new Term("diferente")));
+    raiz.AgregarHijos(exp1);
+    RESULT = raiz;
+:}
+    | tparentesisabrir:pa EXP:exp tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+    | EXP:exp tmas:mas tmas:mas1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    RESULT = raiz;
+:}
+    | EXP:exp tmenos:menos tmenos:menos1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+    raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+    RESULT = raiz;
+:}
+    | tnumero:numero{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(numero, (numeroright+1), (numeroleft+1)), new Term("numero")));
+    RESULT = raiz;
+:}
+    | tcadena:cadena{:
+    String aux = "";
+    for(int i = 0; i < cadena.length(); i++){
+        if(i != 0 && i != cadena.length()-1){
+            aux += cadena.toCharArray()[i];
+        }
+    }
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(aux, (cadenaright+1), (cadenaleft+1)), new Term("cadena")));
+    RESULT = raiz;
+:}
+    | tid:id{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;
+:}
+    | tcaracter:caracter{:
+    String aux = "";
+    for(int i = 0; i < caracter.length(); i++){
+        if(i != 0 && i != caracter.length()-1){
+            aux+=caracter.toCharArray()[i];
+        }
+    }
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(aux, (caracterright+1), (caracterleft+1)), new Term("cadena")));
+    RESULT = raiz;
+:}
+    | ttrue:tt{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(tt, (ttright+1), (ttleft+1)), new Term("true")));
+    RESULT = raiz;
+:}
+    | tfalse:tf{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(new NodoArbol(new Token(tf, (tfright+1), (tfleft+1)), new Term("false")));
+    RESULT = raiz;
+:}
+    | LLAMADA:lla{:
+    NodoArbol raiz = new NodoArbol(null, new Term("EXP"));
+    raiz.AgregarHijos(lla);
+    RESULT = raiz;
+:};
+
+LLAMADA ::= tid:id tparentesisabrir:pa LPARAMETROSLLAMADA:par tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(par);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+        | tid:id tparentesisabrir:pa tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+        | tid:id AUXLLAMADA:auxlla{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(auxlla);
+    RESULT = raiz;
+:};
+
+AUXLLAMADA ::= tpunto:p tid:id AUXLLAMADA:auxlla{:
+    NodoArbol raiz = new NodoArbol(null, new Term("AUXLLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("punto")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(auxlla);
+    RESULT = raiz;
+:}
+            | tpunto:p tid:id tparentesisabrir:pa LPARAMETROSLLAMADA:par tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("AUXLLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("punto")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(par);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+            | tpunto:p tid:id tparentesisabrir:pa tparentesiscerrar:pc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("AUXLLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("punto")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+            | tpunto:p tid:id{:
+    NodoArbol raiz = new NodoArbol(null, new Term("AUXLLAMADA"));
+    raiz.AgregarHijos(new NodoArbol(new Token(p, (pright+1), (pleft+1)), new Term("punto")));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;
+:};
+
+LPARAMETROSLLAMADA ::= EXP:exp tcoma:coma LPARAMETROSLLAMADA:par{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LPARAMETROSLLAMADA"));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(par);
+    RESULT = raiz;
+:}
+                    | EXP:exp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LPARAMETROSLLAMADA"));
+    raiz.AgregarHijos(exp);
+    RESULT = raiz;
+:};
+
+LPARAMETROS ::= TIPO:tipo tid:id tcoma:coma LPARAMETROS:lparametros{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LPARAMETROS"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(coma, (comaright+1), (comaleft+1)), new Term("coma")));
+    raiz.AgregarHijos(lparametros);
+    RESULT = raiz;
+:}
+            | TIPO:tipo tid:id{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LPARAMETROS"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    RESULT = raiz;
+:};
+
+LSENTENCIASMETFUN ::= SENTENCIASMETFUN:sentencias LSENTENCIASMETFUN:lsentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LSENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(lsentencias);
+    RESULT = raiz;
+:}
+                        | SENTENCIASMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("LSENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:};
+
+SENTENCIASMETFUN ::= DECLARACION:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | ASIGNACION:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | IFMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | FORMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | WHILEMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | DOWHILEMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | SWITCHMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+                    | LLAMADA:sentencias tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    RESULT = raiz;
+:}
+                    | treturn:r EXP:sentencias tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(r, (rright+1), (rleft+1)), new Term(r)));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    RESULT = raiz;
+:}
+                    | tbreak:b tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(b, (bright+1), (bleft+1)), new Term(b)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    RESULT = raiz;
+:}
+                    | error tpuntoycoma{:
+NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    RESULT = raiz;
+:}
+                    | error tllavecerrar{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    RESULT = raiz;
+:};
+
+IFMETFUN ::= tif:si tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc ELSEMETFUN:elsem{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(si, (siright+1), (sileft+1)), new Term(si)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(elsem);
+    RESULT = raiz;
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(elsem);
+    RESULT = raiz;
+:}
+        | tif:si tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la tllavecerrar:lc ELSEMETFUN:elsem{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(si, (siright+1), (sileft+1)), new Term(si)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(elsem);
+    RESULT = raiz;
+:};
+
+ELSEMETFUN ::= telse:sino tif:si tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc ELSEMETFUN:elsem{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(sino, (sinoright+1), (sinoleft+1)), new Term(sino)));
+    raiz.AgregarHijos(new NodoArbol(new Token(si, (siright+1), (sileft+1)), new Term(si)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(elsem);
+    RESULT = raiz;
+:}
+            | telse:sino tif:si tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la tllavecerrar:lc ELSEMETFUN:elsem{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(sino, (sinoright+1), (sinoleft+1)), new Term(sino)));
+    raiz.AgregarHijos(new NodoArbol(new Token(si, (siright+1), (sileft+1)), new Term(si)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(elsem);
+    RESULT = raiz;
+:}
+            | telse:sino tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(sino, (sinoright+1), (sinoleft+1)), new Term(sino)));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+
+            | telse:sino tllaveabrir:la tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(sino, (sinoright+1), (sinoleft+1)), new Term(sino)));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | {:
+    NodoArbol raiz = new NodoArbol(null, new Term("SENTENCIASMETODO"));
+    RESULT = raiz;
+:};
+
+SWITCHMETFUN ::= tswitch:separ tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la CASOSMETFUN:casos tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("SWITCH"));
+    raiz.AgregarHijos(new NodoArbol(new Token(separ, (separright+1), (separleft+1)), new Term(separ)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term(pa)));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term(pc)));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term(la)));
+    raiz.AgregarHijos(casos);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term(lc)));
+    RESULT = raiz;
+:};
+
+CASOSMETFUN ::= tcase:caso EXP:exp tdp:dp LSENTENCIASMETFUN:sentencias CASOSMETFUN:casos{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CASE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(caso, (casoright+1), (casoleft+1)), new Term(caso)));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(dp, (dpright+1), (dpleft+1)), new Term("dos puntos")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(casos);
+    RESULT = raiz;
+:}
+            | tcase:caso EXP:exp tdp:dp CASOSMETFUN:casos{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CASE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(caso, (casoright+1), (casoleft+1)), new Term(caso)));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(dp, (dpright+1), (dpleft+1)), new Term("dos puntos")));
+    raiz.AgregarHijos(casos);
+    RESULT = raiz;
+:}
+            | tdefault:caso tdp:dp LSENTENCIASMETFUN:sentencias{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CASE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(caso, (casoright+1), (casoleft+1)), new Term(caso)));
+    raiz.AgregarHijos(new NodoArbol(new Token(dp, (dpright+1), (dpleft+1)), new Term("dos puntos")));
+    raiz.AgregarHijos(sentencias);
+    RESULT = raiz;
+:}
+            | tdefault:caso tdp:dp{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CASE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(caso, (casoright+1), (casoleft+1)), new Term(caso)));
+    raiz.AgregarHijos(new NodoArbol(new Token(dp, (dpright+1), (dpleft+1)), new Term("dos puntos")));
+    RESULT = raiz;
+:}
+            | {:
+    NodoArbol raiz = new NodoArbol(null, new Term("CASE"));
+    RESULT = raiz;
+:};
+
+DOWHILEMETFUN ::= tdo:hacer tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc twhile:mientras tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tpuntoycoma:pyc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("DOWHILE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(hacer, (hacerright+1), (hacerleft+1)), new Term(hacer)));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mientras, (mientrasright+1), (mientrasleft+1)), new Term(mientras)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:}
+            | tdo:hacer tllaveabrir:la tllavecerrar:lc twhile:mientras tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tpuntoycoma:pyc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("DOWHILE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(hacer, (hacerright+1), (hacerleft+1)), new Term(hacer)));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mientras, (mientrasright+1), (mientrasleft+1)), new Term(mientras)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    RESULT = raiz;
+:};
+
+WHILEMETFUN::= twhile:hacer tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("WHILE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(hacer, (hacerright+1), (hacerleft+1)), new Term(hacer)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+            | twhile:hacer tparentesisabrir:pa EXP:exp tparentesiscerrar:pc tllaveabrir:la tllavecerrar:lc{:
+            NodoArbol raiz = new NodoArbol(null, new Term("WHILE"));
+    raiz.AgregarHijos(new NodoArbol(new Token(hacer, (hacerright+1), (hacerleft+1)), new Term(hacer)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:};
+
+FORMETFUN ::= tfor:para tparentesisabrir:pa FOR:aumentofor tparentesiscerrar:pc tllaveabrir:la LSENTENCIASMETFUN:sentencias tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("FOR"));
+    raiz.AgregarHijos(new NodoArbol(new Token(para, (pararight+1), (paraleft+1)), new Term(para)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(aumentofor);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(sentencias);
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:}
+        | tfor:para tparentesisabrir:pa FOR:aumentofor tparentesiscerrar:pc tllaveabrir:la tllavecerrar:lc{:
+    NodoArbol raiz = new NodoArbol(null, new Term("FOR"));
+    raiz.AgregarHijos(new NodoArbol(new Token(para, (pararight+1), (paraleft+1)), new Term(para)));
+    raiz.AgregarHijos(new NodoArbol(new Token(pa, (paright+1), (paleft+1)), new Term("parentesis abrir")));
+    raiz.AgregarHijos(aumentofor);
+    raiz.AgregarHijos(new NodoArbol(new Token(pc, (pcright+1), (pcleft+1)), new Term("parentesis cerrar")));
+    raiz.AgregarHijos(new NodoArbol(new Token(la, (laright+1), (laleft+1)), new Term("llave abrir")));
+    raiz.AgregarHijos(new NodoArbol(new Token(lc, (lcright+1), (lcleft+1)), new Term("llave cerrar")));
+    RESULT = raiz;
+:};
+
+FOR ::= TIPO:tipo tid:id tigual:igual EXP:exp1 tpuntoycoma:pyc EXP:exp tpuntoycoma:pyc1 AUMENTO:aux{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CONDICIONESFOR"));
+    raiz.AgregarHijos(tipo);
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    raiz.AgregarHijos(exp1);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc1, (pyc1right+1), (pyc1left+1)), new Term("punto y coma")));
+    raiz.AgregarHijos(aux);
+    RESULT = raiz;
+:}
+    | tid:id tigual:igual EXP:exp tpuntoycoma:pyc EXP:exp1 tpuntoycoma:pyc1 AUMENTO:aux{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CONDICIONESFOR"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+    raiz.AgregarHijos(exp);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc, (pycright+1), (pycleft+1)), new Term("punto y coma")));
+    raiz.AgregarHijos(exp1);
+    raiz.AgregarHijos(new NodoArbol(new Token(pyc1, (pyc1right+1), (pyc1left+1)), new Term("punto y coma")));
+    raiz.AgregarHijos(aux);
+    RESULT = raiz;
+:}
+    | error tpuntoycoma{:
+    NodoArbol raiz = new NodoArbol(null, new Term("CONDICIONESFOR"));
+    RESULT = raiz;
+:};
+
+AUMENTO ::= tid:id tmas:mas tmas:mas1{:
+    NodoArbol raiz = new NodoArbol(null, new Term("AUMENTO"));
+    raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+    raiz.AgregarHijos(new NodoArbol(new Token(mas1, (mas1right+1), (mas1left+1)), new Term("mas")));
+    RESULT = raiz;
+:}
+        | tid:id tmenos:menos tmenos:menos1{:
+        NodoArbol raiz = new NodoArbol(null, new Term("AUMENTO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+        raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+        raiz.AgregarHijos(new NodoArbol(new Token(menos1, (menos1right+1), (menos1left+1)), new Term("menos")));
+        RESULT = raiz;
+:}
+        | tid:id tmas:mas tigual:igual EXP:exp{:
+        NodoArbol raiz = new NodoArbol(null, new Term("AUMENTO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+        raiz.AgregarHijos(new NodoArbol(new Token(mas, (masright+1), (masleft+1)), new Term("mas")));
+        raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+        raiz.AgregarHijos(exp);
+        RESULT = raiz;
+:}
+        | tid:id tmenos:menos tigual:igual EXP:exp{:
+        NodoArbol raiz = new NodoArbol(null, new Term("AUMENTO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+        raiz.AgregarHijos(new NodoArbol(new Token(menos, (menosright+1), (menosleft+1)), new Term("menos")));
+        raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+        raiz.AgregarHijos(exp);
+        RESULT = raiz;
+:}
+        | tid:id tigual:igual EXP:exp{:
+        NodoArbol raiz = new NodoArbol(null, new Term("AUMENTO"));
+        raiz.AgregarHijos(new NodoArbol(new Token(id, (idright+1), (idleft+1)), new Term("id")));
+        raiz.AgregarHijos(new NodoArbol(new Token(igual, (igualright+1), (igualleft+1)), new Term("igual")));
+        raiz.AgregarHijos(exp);
+        RESULT = raiz;
+:};
+
